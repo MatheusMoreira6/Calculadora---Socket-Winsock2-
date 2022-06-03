@@ -73,6 +73,7 @@ int main() {
             // Limpando as variáveis.
             memset(mensagem, 0x0, T_MAX);
             verificador = 'n';
+            opcao = '1';
             system("cls");
 
             // Exibir menu.
