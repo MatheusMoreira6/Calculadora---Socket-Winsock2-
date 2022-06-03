@@ -8,243 +8,221 @@
 #define PORTA 2021
 #define T_MAX 1024
 
-//FunÁ„o para retornar o resultado do calculo.
-float calcular(int operando, float numero1, float numero2){
-    switch(operando){
-        case 1:{
-            return(numero1+numero2);
+// Fun√ß√£o para retornar o resultado do calculo.
+float calcular(int operando, float numero1, float numero2) {
+    switch (operando)
+    {
+        case 1:
+        {
+            return (numero1 + numero2);
             break;
         }
-        case 2:{
-            return(numero1-numero2);
+        case 2:
+        {
+            return (numero1 - numero2);
             break;
         }
-        case 3:{
-            return(numero1/numero2);
+        case 3:
+        {
+            return (numero1 / numero2);
             break;
         }
-        case 4:{
-            return(numero1*numero2);
+        case 4:
+        {
+            return (numero1 * numero2);
             break;
         }
     }
 }
 
-int main(){
-    setlocale(LC_ALL, "Portuguese");
+int main() {
+    // Definindo o programa e o prompt em UTF-8;
+    setlocale(LC_ALL, "Portuguese_Brasil");
+    system("chcp 65001");
+    system("cls");
+
+    // Configura√ß√µes da tela.
     system("title Servidor - Calculadora Socket");
     system("color F0");
 
-    //IniciliazaÁ„o do Winsock.
+    // Iniciliaza√ß√£o do Winsock.
     WSADATA winsock;
-    if(WSAStartup(MAKEWORD(2, 2), &winsock) != 0){
-        printf("Falha na inicializaÁ„o da biblioteca winsock!\n");
-        return(1);
+    if (WSAStartup(MAKEWORD(2, 2), &winsock) != 0)
+    {
+        printf("Falha na inicializa√ß√£o do winsock!\n");
+        return (1);
     }
 
-    //CriaÁ„o do Socket.
+    // Cria√ß√£o do Socket.
     SOCKET servidor_socket = socket(AF_INET, SOCK_STREAM, 0);
-    if(servidor_socket == INVALID_SOCKET){
-        printf("Falha na criaÁ„o do socket. Erro: %d\n", WSAGetLastError());
+    if (servidor_socket == INVALID_SOCKET)
+    {
+        printf("Falha na cria√ß√£o do socket. Erro: %d\n", WSAGetLastError());
         WSACleanup();
-        return(1);
+        return (1);
     }
 
-    //ConfiguraÁ„o do servidor.
+    // Configura√ß√£o do servidor.
     struct sockaddr_in servidor;
     servidor.sin_addr.s_addr = htonl(INADDR_ANY);
     servidor.sin_family = AF_INET;
     servidor.sin_port = htons(PORTA);
 
-    //Associar o servidor a uma porta local.
-    if(bind(servidor_socket, (struct sockaddr *)&servidor, sizeof(servidor)) < 0){
+    // Associar o servidor a uma porta local.
+    if (bind(servidor_socket, (struct sockaddr *)&servidor, sizeof(servidor)) < 0)
+    {
         printf("Falha ao abrir a porta do servidor. Erro: %d\n", WSAGetLastError());
         closesocket(servidor_socket);
         WSACleanup();
-        return(1);
+        return (1);
     }
 
-    //Configurando o servidor para "escutar" e definindo quantas conexıes poderam ser feitas (Nesse caso apenas uma).
-    if(listen(servidor_socket, 1) == SOCKET_ERROR){
-        printf("Falha!\nO servidor n„o pode ficar escutando. Erro: %d\n", WSAGetLastError());
+    // Configurando o servidor para "escutar" e definindo quantas conex√µes poderam ser feitas (Nesse caso apenas uma).
+    if (listen(servidor_socket, 1) == SOCKET_ERROR)
+    {
+        printf("Falha!\nO servidor n√£o pode ficar 'escutando'. Erro: %d\n", WSAGetLastError());
         closesocket(servidor_socket);
         WSACleanup();
-        return(1);
+        return (1);
     }
 
-    //CriaÁ„o do socket do cliente.
+    // Cria√ß√£o do socket do cliente.
     SOCKET cliente_socket;
     memset(&cliente_socket, 0, sizeof(cliente_socket));
 
-    //CriaÁ„o da estrutura.
+    // Cria√ß√£o da estrutura.
     struct sockaddr_in client;
     int tamanho_client = sizeof(client);
 
-    //Aguardando o cliente para aceitar a conex„o.
-    printf("| Aguardando por uma aplicaÁ„o cliente...\n");
+    // Aguardando o cliente para aceitar a conex√£o.
+    printf("| Aguardando por uma aplica√ß√£o cliente...\n");
     cliente_socket = accept(servidor_socket, (struct sockaddr *)&client, &tamanho_client);
-    if(cliente_socket == INVALID_SOCKET){
-        printf("\nA conex„o com o cliente n„o pode ser aceita. Erro: %d\n", WSAGetLastError());
+    if (cliente_socket == INVALID_SOCKET)
+    {
+        printf("\nA conex√£o com o cliente n√£o pode ser aceita. Erro: %d\n", WSAGetLastError());
         closesocket(servidor_socket);
         WSACleanup();
-        return(1);
+        return (1);
     }
     printf("\n| Uma aplicacao cliente realizou uma conexao!\n\n");
 
-    //Envio de uma mensagem ao cliente.
+    // Envio de uma mensagem ao cliente.
     char mensagem[T_MAX] = "Conexao foi estabelecida com sucesso!\n";
-    if (send(cliente_socket, mensagem, strlen(mensagem), 0) < 0) {
+    if (send(cliente_socket, mensagem, strlen(mensagem), 0) < 0)
+    {
         printf("\nFalha no envio da mensagem. Erro: %d\n", WSAGetLastError());
         closesocket(servidor_socket);
         closesocket(cliente_socket);
         WSACleanup();
-        return(1);
+        return (1);
     }
 
-    //Loop para o envio e recebimento de mensagens.
+    // Loop para o envio e recebimento de mensagens.
     char verificador;
     do {
+        // Limpando as vari√°veis.
+        memset(mensagem, 0x0, T_MAX);
+        verificador = 'n';
+        int operando = 0;
+        float numero_1 = 0;
+        float numero_2 = 0;
+        float resultado = 0;
+        system("cls");
+
         printf("| Servidor - Calculadora Socket\n");
-        //Limpando a estrutura.
-        memset(mensagem, 0x0, T_MAX);
 
-        //Variavel de controle e operaÁ„o.
-        verificador='n';
-        int operando=0;
-        float numero_1=0;
-        float numero_2=0;
-        float resultado=0;
-
-        //Enviar menu.
-        strcpy(mensagem, "|--------------------|\n| Calculadora Socket |\n|--------------------|\n| 1 - Soma           |\n| 2 - SubtraÁ„o      |\n| 3 - Divis„o        |\n| 4 - MultiplicaÁ„o  |\n|--------------------|\n| Informe uma opÁ„o: ");
-        if(send(cliente_socket, mensagem, strlen(mensagem), 0) < 0){
-            printf("\nFalha no envio da mensagem. Erro: %d\n", WSAGetLastError());
-            closesocket(servidor_socket);
-            closesocket(cliente_socket);
-            WSACleanup();
-            return(1);
-        }
-        memset(mensagem, 0x0, T_MAX);
-
-        //Aguardando o tipo de operaÁ„o.
-        if(recv(cliente_socket, mensagem, T_MAX, 0) <= 0){
+        // Aguardando o tipo de opera√ß√£o.
+        if (recv(cliente_socket, mensagem, T_MAX, 0) <= 0)
+        {
             printf("\nErro ao receber a messagem do cliente. Erro: %d\n", WSAGetLastError());
             closesocket(servidor_socket);
             closesocket(cliente_socket);
             WSACleanup();
-            return(1);
+            return (1);
         }
         mensagem[strlen(mensagem)] = '\0';
 
-        //Converter n˙mero para inteiro.
-        operando=atof(mensagem);
+        operando = atoi(mensagem);
         memset(mensagem, 0x0, T_MAX);
-
         printf("\n| Operando: %d\n", operando);
 
-        //Enviar solicitaÁ„o do primeiro n˙mero.
-        strcpy(mensagem, "\n| Informe o primeiro n˙mero: ");
-        if(send(cliente_socket, mensagem, strlen(mensagem), 0) < 0){
-            printf("\nFalha no envio da mensagem. Erro: %d\n", WSAGetLastError());
-            closesocket(servidor_socket);
-            closesocket(cliente_socket);
-            WSACleanup();
-            return(1);
-        }
-        memset(mensagem, 0x0, T_MAX);
-
-        //Aguardando o primeiro n˙mero.
-        if(recv(cliente_socket, mensagem, T_MAX, 0) <= 0){
+        // Aguardando o primeiro n√∫mero.
+        if (recv(cliente_socket, mensagem, T_MAX, 0) <= 0)
+        {
             printf("\nErro ao receber a messagem do cliente. Erro: %d\n", WSAGetLastError());
             closesocket(servidor_socket);
             closesocket(cliente_socket);
             WSACleanup();
-            return(1);
+            return (1);
         }
         mensagem[strlen(mensagem)] = '\0';
 
-        //Converter primeiro n˙mero para float.
-        numero_1=atof(mensagem);
+        numero_1 = atof(mensagem);
         memset(mensagem, 0x0, T_MAX);
+        printf("\n| Primeiro N√∫mero: %g\n", numero_1);
 
-        printf("\n| Primeiro N˙mero: %g\n", numero_1);
-
-        //Enviar solicitaÁ„o do segundo n˙mero.
-        strcpy(mensagem, "\n| Informe o segundo n˙mero: ");
-        if(send(cliente_socket, mensagem, strlen(mensagem), 0) < 0){
-            printf("\nFalha no envio da mensagem. Erro: %d\n", WSAGetLastError());
-            closesocket(servidor_socket);
-            closesocket(cliente_socket);
-            WSACleanup();
-            return(1);
-        }
-        memset(mensagem, 0x0, T_MAX);
-
-        //Aguardando o segundo n˙mero.
-        if(recv(cliente_socket, mensagem, T_MAX, 0) <= 0){
+        // Aguardando o segundo n√∫mero.
+        if (recv(cliente_socket, mensagem, T_MAX, 0) <= 0)
+        {
             printf("\nErro ao receber a messagem do cliente. Erro: %d\n", WSAGetLastError());
             closesocket(servidor_socket);
             closesocket(cliente_socket);
             WSACleanup();
-            return(1);
+            return (1);
         }
         mensagem[strlen(mensagem)] = '\0';
 
-        //Converter segundo n˙mero para float.
-        numero_2=atof(mensagem);
+        numero_2 = atof(mensagem);
         memset(mensagem, 0x0, T_MAX);
+        printf("\n| Segundo N√∫mero: %g\n", numero_2);
 
-        printf("\n| Segundo N˙mero: %g\n", numero_2);
-
-        //Calculando.
-        resultado=calcular(operando, numero_1, numero_2);
-
+        // Calculando.
+        resultado = calcular(operando, numero_1, numero_2);
         printf("\n| Resultado: %g\n", resultado);
 
-        //Enviando resultado.
-        sprintf(mensagem, "\n| Resultado: %g\n", resultado);
+        // Enviando resultado.
+        sprintf(mensagem, "%g", resultado);
         mensagem[strlen(mensagem)] = '\0';
-        if(send(cliente_socket, mensagem, strlen(mensagem), 0) < 0){
+        if (send(cliente_socket, mensagem, strlen(mensagem), 0) < 0)
+        {
             printf("\nFalha no envio da mensagem. Erro: %d\n", WSAGetLastError());
             closesocket(servidor_socket);
             closesocket(cliente_socket);
             WSACleanup();
-            return(1);
+            return (1);
         }
         memset(mensagem, 0x0, T_MAX);
 
-        //VerificaÁ„o de nova operaÁ„o.
-        strcpy(mensagem, "\n| Deseja realizar uma nova operaÁ„o (S/N)?");
-        if(send(cliente_socket, mensagem, strlen(mensagem), 0) < 0){
+        // Verifica√ß√£o de nova opera√ß√£o.
+        strcpy(mensagem, "\n| Deseja realizar uma nova opera√ß√£o (S/N)?");
+        if (send(cliente_socket, mensagem, strlen(mensagem), 0) < 0)
+        {
             printf("\nFalha no envio da mensagem. Erro: %d\n", WSAGetLastError());
             closesocket(servidor_socket);
             closesocket(cliente_socket);
             WSACleanup();
-            return(1);
+            return (1);
         }
         memset(mensagem, 0x0, T_MAX);
 
-        //Aguardando resposta da decis„o.
-        if(recv(cliente_socket, mensagem, T_MAX, 0) <= 0){
+        // Aguardando resposta da decis√£o.
+        if (recv(cliente_socket, mensagem, T_MAX, 0) <= 0)
+        {
             printf("\nErro ao receber a messagem do cliente. Erro: %d\n", WSAGetLastError());
             closesocket(servidor_socket);
             closesocket(cliente_socket);
             WSACleanup();
-            return(1);
+            return (1);
         }
         mensagem[strlen(mensagem)] = '\0';
-        verificador=mensagem[0];
+        verificador = mensagem[0];
 
-        //VerificaÁ„o para repetir.
-        if(verificador=='s' || verificador=='S'){
-            memset(mensagem, 0x0, T_MAX);
-            system("cls");
-        }
-    }while(verificador=='s' || verificador=='S');
+        // Verifica√ß√£o para repetir.
+    } while (verificador == 's' || verificador == 'S');
 
-    //Fechando os sockets.
+    // Fechando os sockets.
     closesocket(servidor_socket);
     closesocket(cliente_socket);
     WSACleanup();
-    return(0);
+    return (0);
 }
